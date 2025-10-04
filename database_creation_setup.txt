@@ -1,0 +1,115 @@
+CREATE TABLE Users (
+    user_id CHAR(36) NOT NULL, -- UUID (stored as 36-char string)
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    profile_picture_url VARCHAR(512),
+    bio TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    PRIMARY KEY (user_id)
+);
+
+INSERT INTO Users (
+    user_id, username, email, password_hash, first_name, last_name, profile_picture_url, bio
+) VALUES (
+    'e2aa8083-8b21-11f0-b862-40c2baa928ad', 
+    'testuser', 
+    'testuser@example.com', 
+    '$2b$12$7dGg8j6oExAMPLEDIGESTedHash',
+    'test', 
+    'user', 
+    'https://example.com/profile.jpg', 
+    'Loves traveling and building APIs.'
+);
+
+Trips Table:
+CREATE TABLE `trips` (
+  `trip_id` char(36) NOT NULL,
+  `user_id` char(36) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text,
+  `start_date` date NOT NULL,
+  `end_date` date DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `total_distance` float DEFAULT NULL,
+  `duration` int DEFAULT NULL,
+  `privacy` enum('public','private','friends') NOT NULL DEFAULT 'private',
+  `cover_image_url` varchar(512) DEFAULT NULL,
+  `status` enum('active','completed','draft') NOT NULL DEFAULT 'active',
+  `delay` int NOT NULL DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `published_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`trip_id`),
+  KEY `fk_trips_user` (`user_id`),
+  CONSTRAINT `fk_trips_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+INSERT INTO Trips (
+    trip_id,
+    user_id,
+    title,
+    description,
+    start_date,
+    end_date,
+    privacy,
+    cover_image_url,
+    created_at,
+    published_at,
+) VALUES (
+    UUID(), -- generates a new trip_id
+    'e2aa8083-8b21-11f0-b862-40c2baa928ad', -- FK to Users.user_id
+    'Backpacking Across Europe',
+    'Exploring France, Germany, and Italy with friends. Lots of food, culture, and adventure!',
+    '2025-06-01',
+    '2025-07-15',
+    'friends',
+    'https://example.com/europe-trip.jpg',
+    NOW(),
+    NULL,         -- not published yet
+);
+
+
+Locations
+CREATE TABLE Locations (
+    location_id CHAR(36) NOT NULL,  -- UUID
+    trip_id CHAR(36) NOT NULL,      -- FK to Trips.trip_id
+
+    latitude DOUBLE NOT NULL,
+    longitude DOUBLE NOT NULL,
+    altitude DOUBLE DEFAULT NULL,
+    accuracy DOUBLE DEFAULT NULL,
+    speed DOUBLE DEFAULT NULL,
+    heading DOUBLE DEFAULT NULL,
+
+    timestamp TIMESTAMP NOT NULL,   -- when the reading was captured
+
+    PRIMARY KEY (location_id),
+    CONSTRAINT fk_trip FOREIGN KEY (trip_id) REFERENCES Trips(trip_id) ON DELETE CASCADE
+);
+
+Trip  Entry:
+CREATE TABLE TripEntries (
+    step_id CHAR(36) NOT NULL,        -- UUID
+    trip_id CHAR(36) NOT NULL,        -- FK to Trips.trip_id
+
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    entry_type VARCHAR(100),
+
+    location_name VARCHAR(255),
+    latitude DOUBLE,
+    longitude DOUBLE,
+
+    image_urls JSON,                  -- store as JSON array of strings
+    note TEXT,
+
+    timestamp TIMESTAMP NOT NULL,     -- when this step happened
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (step_id),
+    CONSTRAINT fk_trip_entry FOREIGN KEY (trip_id) REFERENCES Trips(trip_id) ON DELETE CASCADE
+);
